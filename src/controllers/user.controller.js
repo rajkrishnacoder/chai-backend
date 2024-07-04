@@ -13,13 +13,14 @@ const generateAccessAndRefereshTokens = async(userId) =>{
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
 
+
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
 
         return {accessToken, refreshToken}
 
-
     } catch (error) {
+        console.log("generate token ERROR:", error)
         throw new ApiError(500, "Something went wrong while generating referesh and access token")
     }
 }
@@ -107,7 +108,6 @@ const loginUser = asyncHandler(async (req, res) =>{
     //send cookie
 
     const {email, username, password} = req.body
-    console.log(email);
 
     if (!username && !email) {
         throw new ApiError(400, "username or email is required")
@@ -122,7 +122,7 @@ const loginUser = asyncHandler(async (req, res) =>{
     const user = await User.findOne({
         $or: [{username}, {email}]
     })
-
+  
     if (!user) {
         throw new ApiError(404, "User does not exist")
     }
@@ -150,7 +150,7 @@ const loginUser = asyncHandler(async (req, res) =>{
         new ApiResponse(
             200, 
             {
-                user: loggedInUser, accessToken, refreshToken
+                user: [loggedInUser, accessToken, refreshToken]
             },
             "User logged In Successfully"
         )

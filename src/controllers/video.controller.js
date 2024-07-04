@@ -5,7 +5,6 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
-import jwt from "jsonwebtoken"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -50,33 +49,54 @@ const publishAVideo = asyncHandler(async (req, res) => {
         title,
         description,
         duration: video.duration,
-        owner: user
+        owner: user._id
     })
 
     if(!videoDoc) throw new ApiError(500, "Something went wrong while registering the video")
 
     return res.status(200)
-    .json(200, {videoDoc}, "video registered successfully")
+    .json( new ApiResponse(200, {videoDoc}, "video registered successfully"))
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
-    const isValidObjectId = isValidObjectId(videoId)
-    if(!isValidObjectId) throw new ApiError(400, "video id required")
+
+    if(!isValidObjectId(videoId)) throw new ApiError(400, "video id required")
 
     const video = await Video.findById(videoId)
 
     if(!video) throw new ApiError(400, "video is not found")
 
     return res.status(200)
-    .json(200, {video}, "video is fetched successfully")
+    .json( new ApiResponse(200, {video}, "video is fetched successfully"))
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
 
+    if(!videoId) throw new ApiError(400, "video id is missing")
+
+    if(!req.user?._id) throw new ApiError(400, "user is not logedin")
+
+    const thumbnailLocalPath = req.file?.path
+    if(!thumbnailLocalPath) throw new ApiError(400, "thumbnail is required")
+    
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+    
+    if(!thumbnail) throw new ApiError(400, "thumbnail is required from cloudinary")
+
+    const video = await Video.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                thumbnail: thumbnail.url
+            }
+        }, 
+        {new: true}
+    )
+    
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
