@@ -4,7 +4,7 @@ import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary, deleteOnCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -25,9 +25,9 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select("-password -refreshToken")
 
     if(!user) throw new ApiError(400, "user is not found")
-    
-    if([title, description].some((field) => field?.trim() == "")){
-        throw new ApiError(400, "all fieds are required")
+    if(!title || !description) throw new ApiError(400, "all fields are required")
+    if([title, description].some((field) => field?.trim() === "")){
+        throw new ApiError(400, "all fields are required")
     }
 
     const videoLocalPath = req.files?.videoFile[0]?.path
